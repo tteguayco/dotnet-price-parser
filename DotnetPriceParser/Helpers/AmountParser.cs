@@ -6,7 +6,7 @@ namespace DotnetPriceParser
 {
     public static class AmountParser
     {
-        public static float? parse(string rawPrice)
+        public static double? parse(string rawPrice)
         {
             return null;
         }
