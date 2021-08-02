@@ -10,8 +10,8 @@ namespace Tests
         {
             Price parsedPrice = Price.FromString(rawInput);
 
-            //Assert.AreEqual(parsedPrice.Currency, expectedCurrency);
-            Assert.AreEqual(parsedPrice.Amount, expectedAmount);
+            //Assert.AreEqual(expectedCurrency, parsedPrice.Currency);
+            Assert.AreEqual(expectedAmount, parsedPrice.Amount);
         }
 
         [SetUp]
