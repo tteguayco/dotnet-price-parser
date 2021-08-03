@@ -12,16 +12,16 @@ namespace DotnetPriceParser
 
         private static string extractAmountText(string input)
         {
-            string pattern = @"([\d\s.,]+)";
+            string pattern = @"([\d.,]+)";
             Regex regex = new Regex(pattern, RegexOptions.None);
-            Match m = regex.Match(input);
+            MatchCollection m = regex.Matches(input);
 
-            if (m == null || m.Groups.Count <= 1)
+            if (m.Count < 1)
             {
                 return null;
             }
 
-            return m.Groups[1].Value;
+            return m[0].Value;
         }
 
         private static string joinDetachedDigits(string input)
@@ -55,9 +55,10 @@ namespace DotnetPriceParser
             }
 
             rawPrice = cleanExtraWhitespaces(rawPrice);
-            rawPrice = extractAmountText(rawPrice);
             rawPrice = joinDetachedDigits(rawPrice);
-
+            // TO DO currency symbol as decimal separator; if separator is between two digits
+            rawPrice = extractAmountText(rawPrice);
+            
             if (string.IsNullOrEmpty(rawPrice))
             {
                 return null;
@@ -87,15 +88,15 @@ namespace DotnetPriceParser
             }
 
             double parsedPrice;
-            bool conversionSucceeded = double.TryParse(rawPrice, 
-                NumberStyles.AllowCurrencySymbol, cultureInfo, out parsedPrice);
+            bool conversionSucceeded = double.TryParse(rawPrice,
+                NumberStyles.Float, cultureInfo, out parsedPrice);
 
-            if (conversionSucceeded)
+            if (!conversionSucceeded)
             {
-                return parsedPrice;
+                return null;
             }
 
-            return null;
+            return parsedPrice;
         }
     }
 }
