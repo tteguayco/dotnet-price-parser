@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace DotnetPriceParser
@@ -29,25 +30,61 @@ namespace DotnetPriceParser
             return Regex.Replace(input, @"(?<=\d+)\s+(?=\d+)", "").Trim();
         }
 
-        private static EDecimalSeparatorStyle GetDecimalSeparator(string input)
+        private static string joinDetachedDigitsAndPercentage(string input)
         {
-            string europeanPattern = @"^(((?:\d{1,2}\.)?(?:\d{3}\.)*\d{1,3})|(\d{1,}))(?:,\d*)?$";
-            string americanPattern = @"^(((?:\d{1,2}\,)?(?:\d{3}\,)*\d{1,3})|(\d{1,}))(?:.\d*)?$";
+            return Regex.Replace(input, @"(?<=\d+)\s+(?=%)", "").Trim();
+        }
 
-            if (Regex.IsMatch(input, europeanPattern))
-            {
-                return EDecimalSeparatorStyle.European;
-            }
+        private static string discardPercentageAmounts(string input)
+        {
+            input = joinDetachedDigitsAndPercentage(input);
             
-            if (Regex.IsMatch(input, americanPattern))
+            return Regex.Replace(input, @"\d+%+", "").Trim();
+        }
+
+        private static EDecimalSeparatorStyle GetPredictedDecimalSeparatorStyleByCounting(string input)
+        {
+            int numOfCommas = input.Count(x => x == ',');
+            int numOfDots = input.Count(x => x == '.');
+
+            if (numOfDots == 0 && numOfCommas == 1 && input.IndexOf(',') == input.Length - 4)
             {
                 return EDecimalSeparatorStyle.American;
+            }
+            else if (numOfCommas == 0 && numOfDots == 1 && input.IndexOf('.') == input.Length - 4)
+            {
+                return EDecimalSeparatorStyle.European;
             }
 
             return EDecimalSeparatorStyle.Unknown;
         }
 
-        public static double? parse(string rawPrice)
+        private static EDecimalSeparatorStyle GetPredictedDecimalSeparatorStyle(string input)
+        {
+            EDecimalSeparatorStyle decSepByCounting = GetPredictedDecimalSeparatorStyleByCounting(input);
+
+            if (decSepByCounting != EDecimalSeparatorStyle.Unknown)
+            {
+                return decSepByCounting;
+            }
+
+            string americanPattern = @"^(?:(?:\d{1,2}\,)?(?:\d{3}\,)*\d{3}(?:\.\d*)?|\d{1,2}\.\d*|\d{1,}\.?\d*)$";
+            string europeanPattern = @"^(?:(?:\d{1,2}\.)?(?:\d{3}\.)*\d{3}(?:\,\d*)?|\d{1,2}\,\d*|\d{1,}\,?\d*)$";
+
+            if (Regex.IsMatch(input, americanPattern))
+            {
+                return EDecimalSeparatorStyle.American;
+            }
+
+            if (Regex.IsMatch(input, europeanPattern))
+            {
+                return EDecimalSeparatorStyle.European;
+            }
+
+            return EDecimalSeparatorStyle.Unknown;
+        }
+
+        public static double? parse(string rawPrice, EDecimalSeparatorStyle decSepStyle)
         {
             if (string.IsNullOrEmpty(rawPrice))
             {
@@ -57,6 +94,7 @@ namespace DotnetPriceParser
             rawPrice = cleanExtraWhitespaces(rawPrice);
             rawPrice = joinDetachedDigits(rawPrice);
             // TO DO currency symbol as decimal separator; if separator is between two digits
+            rawPrice = discardPercentageAmounts(rawPrice);
             rawPrice = extractAmountText(rawPrice);
             
             if (string.IsNullOrEmpty(rawPrice))
@@ -64,22 +102,25 @@ namespace DotnetPriceParser
                 return null;
             }
 
-            EDecimalSeparatorStyle decSep = GetDecimalSeparator(rawPrice);
+            if (decSepStyle == EDecimalSeparatorStyle.Unknown)
+            {
+                decSepStyle = GetPredictedDecimalSeparatorStyle(rawPrice);
+            }
 
-            if (decSep == EDecimalSeparatorStyle.Unknown)
+            if (decSepStyle == EDecimalSeparatorStyle.Unknown)
             {
                 return null;
             }
 
             CultureInfo cultureInfo = null;
 
-            if (decSep == EDecimalSeparatorStyle.European)
-            {
-                cultureInfo = new CultureInfo("de-DE");
-            }
-            else if (decSep == EDecimalSeparatorStyle.American)
+            if (decSepStyle == EDecimalSeparatorStyle.American)
             {
                 cultureInfo = new CultureInfo("en-US");
+            }
+            else if (decSepStyle == EDecimalSeparatorStyle.European)
+            {
+                cultureInfo = new CultureInfo("de-DE");
             }
 
             if (cultureInfo == null)
@@ -87,9 +128,8 @@ namespace DotnetPriceParser
                 return null;
             }
 
-            double parsedPrice;
             bool conversionSucceeded = double.TryParse(rawPrice,
-                NumberStyles.Float, cultureInfo, out parsedPrice);
+                NumberStyles.Number, cultureInfo, out double parsedPrice);
 
             if (!conversionSucceeded)
             {

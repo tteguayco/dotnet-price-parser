@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DotnetPriceParser
 {
-    enum EDecimalSeparatorStyle
+    public enum EDecimalSeparatorStyle
     {
         European,
         American,
