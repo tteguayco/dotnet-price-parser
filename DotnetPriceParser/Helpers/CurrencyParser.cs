@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace DotnetPriceParser
 {
@@ -23,6 +24,35 @@ namespace DotnetPriceParser
         private static List<string> CurrencySymbols;
         private static List<string> CurrencyNationalSymbols;
 
+        private static List<string> UnsafeCurrencySymbols = new List<string>();
+        private static readonly List<string> SafeCurrencySymbols = new List<string>()
+        {
+            // Variants of $, etc. They need to be before $.
+            "Bds$", "CUC$", "MOP$",
+            "AR$", "AU$", "BN$", "BZ$", "CA$", "CL$", "CO$", "CV$", "HK$", "MX$",
+            "NT$", "NZ$", "TT$", "RD$", "WS$", "US$",
+            "$U", "C$", "J$", "N$", "R$", "S$", "T$", "Z$", "A$",
+            "SY£", "LB£", "CN¥", "GH₵",
+
+            // Unique currency symbols
+            "$", "€", "£", "zł", "Zł", "Kč", "₽", "¥", "￥",
+            "฿", "դր.", "դր", "₦", "₴", "₱", "৳", "₭", "₪",  "﷼", "៛", "₩", "₫", "₡",
+            "টকা", "ƒ", "₲", "؋", "₮", "नेरू", "₨",
+            "₶", "₾", "֏", "ރ", "৲", "૱", "௹", "₠", "₢", "₣", "₤", "₧", "₯",
+            "₰", "₳", "₷", "₸", "₹", "₺", "₼", "₾", "₿", "ℳ",
+            "ر.ق.\u200f", "د.ك.\u200f", "د.ع.\u200f", "ر.ع.\u200f", "ر.ي.\u200f",
+            "ر.س.\u200f", "د.ج.\u200f", "د.م.\u200f", "د.إ.\u200f", "د.ت.\u200f",
+            "د.ل.\u200f", "ل.س.\u200f", "د.ب.\u200f", "د.أ.\u200f", "ج.م.\u200f",
+            "ل.ل.\u200f",
+
+            " تومان", "تومان",
+
+            // Other common symbols, which we consider unambiguous
+            "EUR", "euro", "eur", "CHF", "DKK", "Rp", "lei",
+            "руб.", "руб",  "грн.", "грн", "дин.", "Dinara", "динар", "лв.", "лв",
+            "р.", "тңг", "тңг.", "ман."
+        };
+
         static CurrencyParser()
         {
             Currencies = JObject.Parse(File.ReadAllText(CurrenciesJsonFilePath));
@@ -30,21 +60,8 @@ namespace DotnetPriceParser
 
             SetCommonlyUsedUnofficialNames();
             SetUpdates();
-
-            CurrencyCodes = Currencies.Properties().Select(p => p.Name).Distinct().ToList();
-            CurrencySymbols = Currencies.Properties().Select(p => (string)p.Value["s"]).Distinct().ToList();
-            CurrencyNationalSymbols = Currencies.Properties().Select(p => (string)p.Value["sn"]).Distinct().ToList();
-
-            var otherCurrencySymbols = Currencies.Properties()
-                .Where(p => p.Value["sn2"] != null).Select(p => p.Value["sn2"]).Distinct().ToList();
-
-            foreach (var symbolList in otherCurrencySymbols)
-            {
-                foreach (var symbol in symbolList)
-                {
-                    CurrencyNationalSymbols.Add((string)symbol);
-                }
-            }
+            InitCurrencyData();
+            InitUnsafeCurrencySymbols();
         }
 
         private static void SetCommonlyUsedUnofficialNames()
@@ -76,9 +93,64 @@ namespace DotnetPriceParser
             Currencies["IRR"]["sn2"] = new JArray() { "ریال" };
         }
 
+        private static void InitCurrencyData()
+        {
+            CurrencyCodes = Currencies.Properties().Select(p => p.Name).Distinct().ToList();
+            CurrencySymbols = Currencies.Properties().Select(p => (string)p.Value["s"]).Distinct().ToList();
+            CurrencyNationalSymbols = Currencies.Properties().Select(p => (string)p.Value["sn"]).Distinct().ToList();
+
+            var otherCurrencySymbols = Currencies.Properties()
+                .Where(p => p.Value["sn2"] != null).Select(p => p.Value["sn2"]).Distinct().ToList();
+
+            foreach (var symbolList in otherCurrencySymbols)
+            {
+                foreach (var symbol in symbolList)
+                {
+                    CurrencyNationalSymbols.Add((string)symbol);
+                }
+            }
+        }
+
+        private static void InitUnsafeCurrencySymbols()
+        {
+            HashSet<string> otherCurrencySymbolsSet = new HashSet<string>();
+
+            otherCurrencySymbolsSet.UnionWith(CurrencyCodes);
+            otherCurrencySymbolsSet.UnionWith(CurrencySymbols);
+            otherCurrencySymbolsSet.UnionWith(CurrencyNationalSymbols);
+            otherCurrencySymbolsSet.UnionWith(new List<string>() { "р", "Р" });
+            otherCurrencySymbolsSet.ExceptWith(SafeCurrencySymbols);
+            otherCurrencySymbolsSet.ExceptWith(new List<string>() { "-", "XXX" });
+            otherCurrencySymbolsSet.ExceptWith("ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray().Select(s => s.ToString()));
+
+            UnsafeCurrencySymbols = otherCurrencySymbolsSet.OrderByDescending(s => s.Length).ToList<string>();
+        }
+
         public static string parse(string rawPrice)
         {
-            return null;
+            string safeCurrencySearchPattern = string.Join("|", SafeCurrencySymbols.Select(s => Regex.Escape(s)));
+            string unSafeCurrencySearchPattern = string.Join("|", UnsafeCurrencySymbols.Select(s => Regex.Escape(s)));
+
+            Regex regex = new Regex(safeCurrencySearchPattern, RegexOptions.None);
+            MatchCollection m = regex.Matches(rawPrice);
+            string result = null;
+
+            if (m.Count < 1)
+            {
+                regex = new Regex(unSafeCurrencySearchPattern, RegexOptions.None);
+                m = regex.Matches(rawPrice);
+
+                if (m.Count < 1)
+                {
+                    return null;
+                }
+
+                result = m[0].Value;
+            }
+
+            result = m[0].Value;
+
+            return result.Trim();
         }
     }
 }
