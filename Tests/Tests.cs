@@ -196,9 +196,9 @@ namespace Tests
             assertIsExpectedPrice("Cкидка до 10% от цены купона", "475 руб.", "руб.", "475", 475);
             assertIsExpectedPrice("€", "11,76", "€", "11,76", 11.76);
             assertIsExpectedPrice("$99.99", "$99.99", "$", "99.99", 99.99);
-            assertIsExpectedPrice("1\xa0298,00 €", "1\xa0298,00 €", "€", "1 298,00", 1298.00);
-            assertIsExpectedPrice("$1\xa0298,00", "$1\xa0298,00", "$", "1 298,00", 1298.00);
-            assertIsExpectedPrice("1\xa0298,00", "1\xa0298,00", null, "1 298,00", 1298.00);
+            assertIsExpectedPrice("1 298,00 €", "1 298,00 €", "€", "1 298,00", 1298.00);
+            assertIsExpectedPrice("$1 298,00", "$1 298,00", "$", "1 298,00", 1298.00);
+            assertIsExpectedPrice("1 298,00", "1 298,00", null, "1 298,00", 1298.00);
             assertIsExpectedPrice(null, ".75 €", "€", ".75", 0.75);
             assertIsExpectedPrice("$.75", "$.75", "$", ".75", 0.75);
             assertIsExpectedPrice("$..75", "$..75", "$", ".75", 0.75);
