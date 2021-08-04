@@ -25,6 +25,7 @@ namespace DotnetPriceParser
         private static List<string> CurrencySymbols;
         private static List<string> CurrencyNationalSymbols;
 
+        private static List<string> DollarCodes = new List<string>();
         private static List<string> UnsafeCurrencySymbols = new List<string>();
         private static readonly List<string> SafeCurrencySymbols = new List<string>()
         {
@@ -63,6 +64,7 @@ namespace DotnetPriceParser
             SetUpdates();
             InitCurrencyData();
             InitUnsafeCurrencySymbols();
+            InitDollarCodes();
         }
 
         private static void SetCommonlyUsedUnofficialNames()
@@ -127,16 +129,36 @@ namespace DotnetPriceParser
             UnsafeCurrencySymbols = otherCurrencySymbolsSet.OrderByDescending(s => s.Length).ToList<string>();
         }
 
+        private static void InitDollarCodes()
+        {
+            DollarCodes = CurrencyCodes.Where(cc => cc.EndsWith("D")).Select(cc => cc).Distinct().ToList();
+        }
+
         public static string parse(string rawPrice)
         {
+            if (string.IsNullOrEmpty(rawPrice))
+            {
+                return null;
+            }
+
+            string dollarCodesPattern = $"\\b(?:{string.Join("|", DollarCodes.Select(s => Regex.Escape(s)))})(?=\\$?(?:[\\W\\d]|$))";
             string safeCurrencySearchPattern = string.Join("|", SafeCurrencySymbols.Select(s => Regex.Escape(s)));
             string unSafeCurrencySearchPattern = string.Join("|", UnsafeCurrencySymbols.Select(s => Regex.Escape(s)));
+            string result = null;
 
-            Regex regex = new Regex(safeCurrencySearchPattern, RegexOptions.None);
-            MatchCollection m = regex.Matches(rawPrice);
-            string result = RegexHelper.GetFirstMatch(safeCurrencySearchPattern, rawPrice);
+            if (rawPrice.Contains("$"))
+            {
+                result = RegexHelper.GetFirstMatch(dollarCodesPattern, rawPrice);
+            }
 
-            if (result != null)
+            if (!string.IsNullOrEmpty(result))
+            {
+                return result;
+            }
+
+            result = RegexHelper.GetFirstMatch(safeCurrencySearchPattern, rawPrice);
+
+            if (!string.IsNullOrEmpty(result))
             {
                 return result;
             }

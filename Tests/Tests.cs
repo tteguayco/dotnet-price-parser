@@ -178,7 +178,7 @@ namespace Tests
             assertIsExpectedPrice("12 900,00 руб", "руб", 12900);
             assertIsExpectedPrice("1.727 Ft", "Ft", 1727);
             assertIsExpectedPrice("79,00 €", "€", 79);
-            //assertIsExpectedPrice("NZD $100.70", "NZD", 100.70);
+            assertIsExpectedPrice("NZD $100.70", "NZD", 100.70);
             assertIsExpectedPrice("479.00", null, 479.00);
             assertIsExpectedPrice("$ 69.00", "$", 69.00);
             assertIsExpectedPrice("135,00 €", "€", 135.00);
