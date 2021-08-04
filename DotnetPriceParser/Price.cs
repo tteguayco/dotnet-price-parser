@@ -13,11 +13,18 @@ namespace DotnetPriceParser
             Currency = currency;
         }
 
-        public static Price FromString(string rawPrice,
+        public static Price FromString(
+            string rawPrice,
+            string rawCurrencyHint = null,
             EDecimalSeparatorStyle decSepStyle = EDecimalSeparatorStyle.Unknown)
         {
             double? amount = AmountParser.parse(rawPrice, decSepStyle);
             string currency = CurrencyParser.parse(rawPrice);
+
+            if (string.IsNullOrEmpty(currency) && !string.IsNullOrEmpty(rawCurrencyHint))
+            {
+                currency = CurrencyParser.parse(rawCurrencyHint);
+            }
 
             return new Price(amount, currency);
         }
