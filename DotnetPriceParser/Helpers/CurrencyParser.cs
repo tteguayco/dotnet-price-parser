@@ -49,6 +49,7 @@ namespace DotnetPriceParser
 
         private static void SetCommonlyUsedUnofficialNames()
         {
+            // See also: https://en.wikipedia.org/wiki/ISO_4217#Unofficial_currency_codes
             Currencies.Add("NTD", Currencies.Value<JObject>("TWD"));
             Currencies.Add("RMB", Currencies.Value<JObject>("CNY"));
         }
