@@ -3,6 +3,7 @@
  * https://github.com/scrapinghub/price-parser/blob/82c27a8789e627312ed471b519fdd11b7c7cd8c2/price_parser/_currencies.py
  */
 
+using DotnetPriceParser.Helpers;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ using System.Text.RegularExpressions;
 
 namespace DotnetPriceParser
 {
-    public static class CurrencyParser
+    internal static class CurrencyParser
     {
         private static readonly string CurrenciesJsonFilePath = @"Resources/currencies.json";
         private static readonly string CurrenciesReplacedByEuroJsonFilePath = @"Resources/currencies_replaced_by_euro.json";
@@ -133,24 +134,14 @@ namespace DotnetPriceParser
 
             Regex regex = new Regex(safeCurrencySearchPattern, RegexOptions.None);
             MatchCollection m = regex.Matches(rawPrice);
-            string result = null;
+            string result = RegexHelper.GetFirstMatch(safeCurrencySearchPattern, rawPrice);
 
-            if (m.Count < 1)
+            if (result != null)
             {
-                regex = new Regex(unSafeCurrencySearchPattern, RegexOptions.None);
-                m = regex.Matches(rawPrice);
-
-                if (m.Count < 1)
-                {
-                    return null;
-                }
-
-                result = m[0].Value;
+                return result;
             }
 
-            result = m[0].Value;
-
-            return result.Trim();
+            return RegexHelper.GetFirstMatch(unSafeCurrencySearchPattern, rawPrice);
         }
     }
 }

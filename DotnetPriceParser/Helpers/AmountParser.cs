@@ -1,10 +1,11 @@
-﻿using System.Globalization;
+﻿using DotnetPriceParser.Helpers;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace DotnetPriceParser
 {
-    public static class AmountParser
+    internal static class AmountParser
     {
         private static string cleanExtraWhitespaces(string input)
         {
@@ -14,15 +15,8 @@ namespace DotnetPriceParser
         private static string extractAmountText(string input)
         {
             string pattern = @"([\d.,]+)";
-            Regex regex = new Regex(pattern, RegexOptions.None);
-            MatchCollection m = regex.Matches(input);
 
-            if (m.Count < 1)
-            {
-                return null;
-            }
-
-            return m[0].Value;
+            return RegexHelper.GetFirstMatch(pattern, input);
         }
 
         private static string joinDetachedDigits(string input)
