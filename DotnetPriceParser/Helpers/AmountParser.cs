@@ -53,11 +53,11 @@ namespace DotnetPriceParser
             int numOfCommas = input.Count(x => x == ',');
             int numOfDots = input.Count(x => x == '.');
 
-            if (numOfDots == 0 && numOfCommas == 1 && input.IndexOf(',') == input.Length - 4)
+            if (numOfDots == 0 && numOfCommas == 1 && input.IndexOf(',') == input.Length - 4 && input.Length <= 7)
             {
                 return EDecimalSeparatorStyle.American;
             }
-            else if (numOfCommas == 0 && numOfDots == 1 && input.IndexOf('.') == input.Length - 4)
+            else if (numOfCommas == 0 && numOfDots == 1 && input.IndexOf('.') == input.Length - 4 && input.Length <= 7)
             {
                 return EDecimalSeparatorStyle.European;
             }
@@ -135,7 +135,9 @@ namespace DotnetPriceParser
                 decimalSepReplacement = ".";
             }
 
-            return Regex.Replace(input, @"(?<=\d+)€+\s*(?=\d+)", decimalSepReplacement).Trim();
+            string pattern = @"(?<=\d+)€+\s+(?=\d{1,2}(?:\D|$))|(?<=\d+)€+(?=\d+)";
+
+            return Regex.Replace(input, pattern, decimalSepReplacement).Trim();
         }
 
         private static EDecimalSeparatorStyle GetPredictedDecimalSeparatorStyle(string input)
@@ -168,6 +170,11 @@ namespace DotnetPriceParser
             if (string.IsNullOrEmpty(rawPrice))
             {
                 return null;
+            }
+
+            if (rawPrice.ToLower().Contains("free"))
+            {
+                return 0;
             }
 
             rawPrice = cleanExtraWhitespaces(rawPrice);

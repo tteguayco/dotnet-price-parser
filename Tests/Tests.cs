@@ -1,4 +1,9 @@
-﻿using DotnetPriceParser;
+﻿/*
+ * These unit tests are based on ScrapingHub's price-parser project.
+ * See: https://github.com/scrapinghub/price-parser/blob/master/tests/test_price_parsing.py
+ */
+
+using DotnetPriceParser;
 using NUnit.Framework;
 
 namespace Tests
@@ -11,9 +16,10 @@ namespace Tests
             string rawPrice,
             string expectedCurrency,
             string expectedAmountText,
-            double? expectedAmount)
+            double? expectedAmount,
+            EDecimalSeparatorStyle decSepStyle = EDecimalSeparatorStyle.Unknown)
         {
-            Price parsedPrice = Price.FromString(rawPrice, rawCurrencyHint: rawCurrencyHint);
+            Price parsedPrice = Price.FromString(rawPrice, rawCurrencyHint: rawCurrencyHint, decSepStyle: decSepStyle);
 
             Assert.AreEqual(expectedCurrency, parsedPrice.Currency);
             Assert.AreEqual(expectedAmount, parsedPrice.Amount);
@@ -22,6 +28,30 @@ namespace Tests
         [SetUp]
         public void Setup()
         {
+        }
+
+        [Test]
+        public void TestPriceExtraction_BugsCaught()
+        {
+            assertIsExpectedPrice(null, "US$:12.99", "US$", "12.99", 12.99);
+            assertIsExpectedPrice("GBP", "34.992001", "GBP", "34.992001", 34.992001);
+            assertIsExpectedPrice("GBP", "29.1583", "GBP", "29.1583", 29.1583);
+            assertIsExpectedPrice(null, "1.11000000000000009770", null, "1.11000000000000009770", 1.11000000000000009770);
+        }
+
+        [Test]
+        public void TestPriceExtraction_New()
+        {
+            assertIsExpectedPrice(null, "PTE 120 000 000", "PTE", "120 000 000", 120000000);
+            assertIsExpectedPrice(null, "DEM 170 000", "DEM", "170 000", 170000);
+            assertIsExpectedPrice(null, "₤1700.", "₤", "1700", 1700);
+            assertIsExpectedPrice(null, "$ 1.144.000", "$", "1.144.000", 1144000);
+            assertIsExpectedPrice(null, "A$190.00", "A$", "190.00", 190);
+            assertIsExpectedPrice(null, "205,68 € 205.68", "€", "205,68", 205.68);
+            assertIsExpectedPrice(null, "AED 8000 (USD 2179)", "AED", "8000", 8000);
+            assertIsExpectedPrice(null, "13800 ₶", "₶", "13800", 13800);
+            assertIsExpectedPrice(null, "12,000원", "원", "12,000", 12000);
+            assertIsExpectedPrice(null, "3,500円", "円", "3,500", 3500);
         }
 
         [Test]
@@ -72,7 +102,7 @@ namespace Tests
             assertIsExpectedPrice("Cena", "299 Kč", "Kč", "299", 299);
             assertIsExpectedPrice("1128240 рублей", "1128240 рублей", "руб", "1128240", 1128240);
             assertIsExpectedPrice("Now £9.99 $13.71 11,16 € £8.33 $13.71 9,30 €", "£9.99", "£", "9.99", 9.99);
-            //assertIsExpectedPrice("Free!", "Free!", null, "0", 0);
+            assertIsExpectedPrice("Free!", "Free!", null, "0", 0);
             assertIsExpectedPrice("49,96€", "49,96€", "€", "49,96", 49.96);
             assertIsExpectedPrice("SKU:", "$9.00", "$", "9.00", 9);
             assertIsExpectedPrice("£ 8.29", "8.29", "£", "8.29", 8.29);
@@ -422,7 +452,7 @@ namespace Tests
             assertIsExpectedPrice("$ SGD4.90", "$ SGD4.90", "SGD", "4.90", 4.9);
         }
 
-            [Test]
+        [Test]
         public void TestPriceExtractionWithNoPrice()
         {
             assertIsExpectedPrice("EUR", null, "EUR", null, null);
@@ -455,7 +485,7 @@ namespace Tests
             assertIsExpectedPrice(null, "naša cena 21,95 €", "€", "21,95", 21.95);
             assertIsExpectedPrice(null, "343,05 €", "€", "343,05", 343.05);
             assertIsExpectedPrice(null, "1 139,00 €", "€", "1 139,00", 1139);
-            //assertIsExpectedPrice(null, "157,000 تومان", "تومان", 157,000", 157000);
+            assertIsExpectedPrice(null, "157,000 تومان", "تومان", "157,000", 157000);
             assertIsExpectedPrice(null, "35.00", null, "35.00", 35);
             assertIsExpectedPrice(null, "8.000.000 ₫", "₫", "8.000.000", 8000000);
             assertIsExpectedPrice(null, "6790 Dinara", "Dinara", "6790", 6790);
@@ -758,7 +788,7 @@ namespace Tests
             assertIsExpectedPrice(null, "59.00", null, "59.00", 59.00);
             assertIsExpectedPrice(null, "1,120.00", null, "1,120.00", 1120);
             assertIsExpectedPrice(null, "a partire da 7,32 € *", "€", "7,32", 7.32);
-            assertIsExpectedPrice(null, "148.50 Inc GST", null, "148.50", 148.50); // India
+            assertIsExpectedPrice(null, "148.50 Inc GST", null, "148.50", 148.50);
             assertIsExpectedPrice(null, "7.49", null, "7.49", 7.49);
             assertIsExpectedPrice(null, "80.00", null, "80.00", 80.00);
             assertIsExpectedPrice(null, "93 499 Kč", "Kč", "93 499", 93499);
@@ -787,6 +817,224 @@ namespace Tests
             assertIsExpectedPrice(null, "6.70€", "€", "6.70", 6.70);
             assertIsExpectedPrice(null, "$29.99", "$", "29.99", 29.99);
             assertIsExpectedPrice(null, "6.50", null, "6.50", 6.50);
+        }
+        [Test]
+        public void TestPriceExtractionWithCurrencyHint_3()
+        {
+            assertIsExpectedPrice("R$", "R$ 139,99 R$ 135,99", "R$", "139,99", 139.99);
+            assertIsExpectedPrice("£", "£ 34.99", "£", "34.99", 34.99);
+            assertIsExpectedPrice("Price", "$7.65", "$", "7.65", 7.65);
+            assertIsExpectedPrice("€", "75,00", "€", "75,00", 75);
+            assertIsExpectedPrice(null, "34,90 €", "€", "34,90", 34.90);
+            assertIsExpectedPrice(null, "629.95", null, "629.95", 629.95);
+            assertIsExpectedPrice("11000 руб.", "47700 руб.", "руб.", "47700", 47700);
+            assertIsExpectedPrice("$29.99 – $74.99", "$29.99", "$", "29.99", 29.99);
+            assertIsExpectedPrice(null, "174,00 €", "€", "174,00", 174);
+            assertIsExpectedPrice(null, "18,00 €", "€", "18,00", 18);
+            assertIsExpectedPrice("Price:", "$19.50", "$", "19.50", 19.50);
+            assertIsExpectedPrice("8 390 руб.", "8 390 руб.", "руб.", "8 390", 8390);
+            assertIsExpectedPrice(null, "55,00 €", "€", "55,00", 55);
+            assertIsExpectedPrice("€333.00", "€299.71", "€", "299.71", 299.71);
+            assertIsExpectedPrice(null, "384,00 €", "€", "384,00", 384);
+            assertIsExpectedPrice("From:", "From: $14.97", "$", "14.97", 14.97);
+            assertIsExpectedPrice(null, "0,00 €", "€", "0,00", 0);
+            assertIsExpectedPrice(null, "€ 280,00", "€", "280,00", 280);
+            assertIsExpectedPrice(null, "11 450 Kč", "Kč", "11 450", 11450);
+            assertIsExpectedPrice("Price $118.15", "$118.15", "$", "118.15", 118.15);
+            assertIsExpectedPrice("€", "49.99", "€", "49.99", 49.99);
+            assertIsExpectedPrice("1,15 €", "1,15 €", "€", "1,15", 1.15);
+            assertIsExpectedPrice("17,99 €", "31,93 €", "€", "31,93", 31.93);
+            assertIsExpectedPrice(null, "र24,401", "र", "24,401", 24401);
+            assertIsExpectedPrice(null, "$60.00", "$", "60.00", 60);
+            assertIsExpectedPrice("12,15 €", "12,15 €", "€", "12,15", 12.15);
+            assertIsExpectedPrice("£ 163.95", "163.95", "£", "163.95", 163.95);
+            assertIsExpectedPrice(null, "30,00 €", "€", "30,00", 30);
+            assertIsExpectedPrice("zł", "165,00 zł", "zł", "165,00", 165);
+            assertIsExpectedPrice("469.00zł Bez podatku: 381.30zł", "469.00zł", "zł", "469.00", 469);
+            assertIsExpectedPrice(null, "72.95", null, "72.95", 72.95);
+            assertIsExpectedPrice("Costo: $2,222.- Más IVA", "MX$3,179.00", "MX$", "3,179.00", 3179);
+            assertIsExpectedPrice(null, "naše cena 4 370 Kč", "Kč", "4 370", 4370);
+            assertIsExpectedPrice("€", "21,33 €", "€", "21,33", 21.33);
+            assertIsExpectedPrice(null, "49.95", null, "49.95", 49.95);
+            assertIsExpectedPrice(null, "Před slevou 59 900 Kč", "Kč", "59 900", 59900);
+            assertIsExpectedPrice("ab", "6,78 € *", "€", "6,78", 6.78);
+            assertIsExpectedPrice(null, "442", null, "442", 442);
+            assertIsExpectedPrice("18.10 €", "16.00 €", "€", "16.00", 16.00);
+            assertIsExpectedPrice(null, "0.00", null, "0.00", 0.00);
+            assertIsExpectedPrice(null, "379,00 € *", "€", "379,00", 379.00);
+            assertIsExpectedPrice(null, "125.00", null, "125.00", 125.00);
+            assertIsExpectedPrice(null, "£ 30.84", "£", "30.84", 30.84);
+            assertIsExpectedPrice(null, "259,00 €", "€", "259,00", 259);
+            assertIsExpectedPrice("à partir de 1540 € / pers", "1540 €", "€", "1540", 1540);
+            assertIsExpectedPrice(null, "95 €", "€", "95", 95);
+            assertIsExpectedPrice(null, "53.79", null, "53.79", 53.79);
+            assertIsExpectedPrice("NT$", "NT$ 1,160", "NT$", "1,160", 1160);
+            assertIsExpectedPrice("ACTIVE", "$69,900", "$", "69,900", 69900);
+            assertIsExpectedPrice(null, "$14.95", "$", "14.95", 14.95);
+            assertIsExpectedPrice("₹", "₹ 4649", "₹", "4649", 4649);
+            assertIsExpectedPrice("25 грн", "25 грн", "грн", "25", 25);
+            assertIsExpectedPrice("€", "16,40", "€", "16,40", 16.40);
+            assertIsExpectedPrice("PLN", "0,46", "PLN", "0,46", 0.46);
+            assertIsExpectedPrice("£", "£ 261.25", "£", "261.25", 261.25);
+            assertIsExpectedPrice(null, "$0.00", "$", "0.00", 0);
+            assertIsExpectedPrice(null, "24.95", null, "24.95", 24.95);
+            assertIsExpectedPrice("грн.", "27.00", "грн.", "27.00", 27.00);
+            assertIsExpectedPrice("New", "$189,900", "$", "189,900", 189900);
+            assertIsExpectedPrice("NA", "$269", "$", "269", 269);
+            assertIsExpectedPrice("$279", "$189", "$", "189", 189);
+            assertIsExpectedPrice(null, "160,00 zł", "zł", "160,00", 160);
+            assertIsExpectedPrice("2 069 рублей", "2 400", "руб", "2 400", 2400);
+            assertIsExpectedPrice("Sale Price: $4.59", "$4.59", "$", "4.59", 4.59);
+            assertIsExpectedPrice("Купить", "542 руб.", "руб.", "542", 542);
+            assertIsExpectedPrice(null, "$19.99", "$", "19.99", 19.99);
+            assertIsExpectedPrice("Price", "$6.45", "$", "6.45", 6.45);
+            assertIsExpectedPrice(null, "32.99", null, "32.99", 32.99);
+            assertIsExpectedPrice(null, "$86.44", "$", "86.44", 86.44);
+            assertIsExpectedPrice(null, "25.00€", "€", "25.00", 25.00);
+            assertIsExpectedPrice(null, "99,00 €", "€", "99,00", 99.00);
+            assertIsExpectedPrice(null, "103.90", null, "103.90", 103.90);
+            assertIsExpectedPrice("14,00 € *", "25,00 € *", "€", "25,00", 25.00);
+            assertIsExpectedPrice(null, "$6.49", "$", "6.49", 6.49);
+            assertIsExpectedPrice("€ 59,95", "€ 59,95", "€", "59,95", 59.95);
+            assertIsExpectedPrice(null, "Běžná cena 75 990,00 Kč", "Kč", "75 990,00", 75990);
+            assertIsExpectedPrice("Price", "Rp 1.550.000", "Rp", "1.550.000", 1550000);
+            assertIsExpectedPrice("грн.", "1 430", "грн.", "1 430", 1430);
+            assertIsExpectedPrice("руб. (шт)", "1 690,54 руб. (шт)", "руб.", "1 690,54", 1690.54);
+            assertIsExpectedPrice("69 TL 41.90 TL", "69 TL 41.90 TL", "TL", "69", 69);
+            assertIsExpectedPrice("ALIDAD", "960,00 €", "€", "960,00", 960);
+            assertIsExpectedPrice(null, "184,35 lei", "lei", "184,35", 184.35);
+            assertIsExpectedPrice(null, "1 505 Kč", "Kč", "1 505", 1505);
+            assertIsExpectedPrice(null, "23,00 € *", "€", "23,00", 23);
+            assertIsExpectedPrice(null, "25.97", null, "25.97", 25.97);
+            assertIsExpectedPrice(null, "58,19 €", "€", "58,19", 58.19);
+            assertIsExpectedPrice(null, "27.00 лв.", "лв.", "27.00", 27.00);
+            assertIsExpectedPrice("48,00 €", "3,85 €", "€", "3,85", 3.85);
+            assertIsExpectedPrice(null, "10,90 €", "€", "10,90", 10.90);
+            assertIsExpectedPrice("$ 879.0", "$ 879.0", "$", "879.0", 879.0);
+            assertIsExpectedPrice("EUR", "25.88", "EUR", "25.88", 25.88);
+            assertIsExpectedPrice(null, "R$215,10", "R$", "215,10", 215.10);
+            assertIsExpectedPrice("£", "£ 12.50", "£", "12.50", 12.50);
+            assertIsExpectedPrice(null, "3 173,00 €", "€", "3 173,00", 3173);
+            assertIsExpectedPrice(null, "34,94 € *", "€", "34,94", 34.94);
+            assertIsExpectedPrice(null, "Ops!", null, null, null);
+            assertIsExpectedPrice(null, "392. 00", null, "392. 00", 392);
+            assertIsExpectedPrice("€", "213,62", "€", "213,62", 213.62);
+            assertIsExpectedPrice("3,00 €", "3,00 €", "€", "3,00", 3);
+            assertIsExpectedPrice("£0.00", "£0.00", "£", "0.00", 0.00);
+            assertIsExpectedPrice("€", "10 990,00", "€", "10 990,00", 10990);
+            assertIsExpectedPrice(null, "€ 24,95", "€", "24,95", 24.95);
+            assertIsExpectedPrice(null, "Not Available", null, null, null);
+            assertIsExpectedPrice(null, "$19.99", "$", "19.99", 19.99);
+            assertIsExpectedPrice("Р", "15 130 Р", "Р", "15 130", 15130);
+            assertIsExpectedPrice("$5.95", "$5.95", "$", "5.95", 5.95);
+            assertIsExpectedPrice(null, "199,99 €", "€", "199,99", 199.99);
+            assertIsExpectedPrice("Code", "£23.40", "£", "23.40", 23.40);
+            assertIsExpectedPrice("$29.99", "$29.99", "$", "29.99", 29.99);
+            assertIsExpectedPrice(null, "795", null, "795", 795);
+            assertIsExpectedPrice("Sorry, this item is currently out of stock but you can still order, we will send as soon a product arrives", "34.99", null, "34.99", 34.99);
+            assertIsExpectedPrice("Our Price: $149.95", "Our Price: $149.95", "$", "149.95", 149.95);
+            assertIsExpectedPrice("$119.95", "$119.95", "$", "119.95", 119.95);
+            assertIsExpectedPrice(null, "339 грн", "грн", "339", 339);
+            assertIsExpectedPrice("$0.00", "$0.00", "$", "0.00", 0.00);
+            assertIsExpectedPrice("€", "79,00", "€", "79,00", 79.00);
+            assertIsExpectedPrice(null, "378.00", null, "378.00", 378.00);
+            assertIsExpectedPrice(null, "Pure & IP BP Ph. Eur. USP ACS AR LR", null, null, null);
+            assertIsExpectedPrice(null, "$356.03", "$", "356.03", 356.03);
+            assertIsExpectedPrice("naše cena", "běžná cena 890 Kč", "Kč", "890", 890);
+            assertIsExpectedPrice(null, "$49.99", "$", "49.99", 49.99);
+            assertIsExpectedPrice(null, "5 550 Kč", "Kč", "5 550", 5550);
+            assertIsExpectedPrice(null, "5 770 Kč", "Kč", "5 770", 5770);
+            assertIsExpectedPrice(null, "Free!", null, "0", 0);
+            assertIsExpectedPrice("194 ₹", "199 ₹", "₹", "199", 199);
+            assertIsExpectedPrice("5€", "16,50 € *", "€", "16,50", 16.50);
+            assertIsExpectedPrice(null, "$42.95", "$", "42.95", 42.95);
+            assertIsExpectedPrice(null, "1.837, 32 €", "€", "1.837, 32", 1837.32);
+            assertIsExpectedPrice("$", "$ 791.00 $ 479.00", "$", "791.00", 791.00);
+            assertIsExpectedPrice(null, "$69.30", "$", "69.30", 69.30);
+            assertIsExpectedPrice(null, "$163,900", "$", "163,900", 163900);
+            assertIsExpectedPrice(null, "36.95", null, "36.95", 36.95);
+            assertIsExpectedPrice("Rp 235.000", "Rp 235.000", "Rp", "235.000", 235000);
+            assertIsExpectedPrice("£", "11,13 €", "€", "11,13", 11.13);
+            assertIsExpectedPrice(null, "160,00 lei", "lei", "160,00", 160);
+            assertIsExpectedPrice("3 300 руб", "3 300 руб", "руб", "3 300", 3300);
+            assertIsExpectedPrice("Р", "4 690 Р", "Р", "4 690", 4690);
+            assertIsExpectedPrice("189,00 € *", "189,00 € *", "€", "189,00", 189);
+            assertIsExpectedPrice("€", null, "€", null, null);
+            assertIsExpectedPrice("$ 30.00", "$ 30.00", "$", "30.00", 30.00);
+            assertIsExpectedPrice("$", "$ 5.95", "$", "5.95", 5.95);
+            assertIsExpectedPrice("£62.90", "£74.00", "£", "74.00", 74.00);
+            assertIsExpectedPrice(null, "158,24 €", "€", "158,24", 158.24);
+            assertIsExpectedPrice(null, "550,00 лв", "лв", "550,00", 550);
+            assertIsExpectedPrice("7,25 € *", "7,25 € *", "€", "7,25", 7.25);
+            assertIsExpectedPrice(null, "94,000 تومان", "تومان", "94,000", 94000);
+            assertIsExpectedPrice(null, "$8.27", "$", "8.27", 8.27);
+            assertIsExpectedPrice("Đã có VAT", "12.500 ₫", "₫", "12.500", 12500);
+            assertIsExpectedPrice(null, "27.50", null, "27.50", 27.50);
+            assertIsExpectedPrice("23.90", "23.90", null, "23.90", 23.90);
+            assertIsExpectedPrice("Р", "18 000 Р", "Р", "18 000", 18000);
+            assertIsExpectedPrice(null, "48,96 €", "€", "48,96", 48.96);
+            assertIsExpectedPrice("DKK", "199 DKK", "DKK", "199", 199);
+            assertIsExpectedPrice("Price: £6.95 - £9.95", "£6.95 - £9.95", "£", "6.95", 6.95);
+            assertIsExpectedPrice(null, "599.97", null, "599.97", 599.97);
+            assertIsExpectedPrice(null, "$40.00", "$", "40.00", 40.00);
+            assertIsExpectedPrice("Cena 300,00 Kč", "100,00 Kč", "Kč", "100,00", 100);
+            assertIsExpectedPrice("18,25 €", "18,25 €", "€", "18,25", 18.25);
+            assertIsExpectedPrice(null, "29,00 €", "€", "29,00", 29);
+            assertIsExpectedPrice("€", "€ 39,95", "€", "39,95", 39.95);
+            assertIsExpectedPrice(null, "32.00", null, "32.00", 32.00);
+            assertIsExpectedPrice(null, "32.99", null, "32.99", 32.99);
+            assertIsExpectedPrice("HUF", "39000", "HUF", "39000", 39000);
+            assertIsExpectedPrice(null, "850,000 ریال", "ریال", "850,000", 850000);
+            assertIsExpectedPrice(null, "24,00 €", "€", "24,00", 24.00);
+            assertIsExpectedPrice("Versand", "CHF 19.90", "CHF", "19.90", 19.90);
+            assertIsExpectedPrice("", "530, 42 Zł", "Zł", "530, 42", 530.42);
+        }
+
+        //[Test]
+        //public void TestPriceExtraction_XFail()
+        //{
+            //// Amount is picked as a price
+            //assertIsExpectedPrice("3 Ausgaben für nur 14,85 EUR", "3 Ausgaben für nur 14,85 EUR", "EUR", "14,85", 14.85);
+            //assertIsExpectedPrice(null, "Buy Now - 2 Litre Was $120.00 Now $60.00", "$", "60.00", 60);
+            //assertIsExpectedPrice("Цена: уточняйте (мин. заказ: 1 )", "Цена: уточняйте (мин. заказ: 1 )", null, null, null);
+            //assertIsExpectedPrice(null, "50 - $2.00 100 - $2.75 400 - $4.50 1,000 - $9.00 2,000 - $17.00 3,000 - $24.00 10,000 - $75.00", "$", "2.00", 2);
+
+            //// No detection of such single-letter currencies
+            //assertIsExpectedPrice("R273.00", "R273.00", "R", "273.00", 273);
+            //assertIsExpectedPrice("R8,499", "R8,499", "R", "8,499", 8499);
+            //assertIsExpectedPrice("Cuneo", "61.858 L", "L", "61.858", 61858); // Romanian New Leu
+
+            //// "р" / "руб" is detected as currency
+            //assertIsExpectedPrice(">", "См. цену в прайсе", null, null, null);
+            //assertIsExpectedPrice("Купить", "Печная труба", null, null, null);
+
+            //// Dates
+            //assertIsExpectedPrice(null, "July, 2004", null, null, null);
+
+            //assertIsExpectedPrice(null, "15.08.2017", null, null, null);
+
+            //// Other incorrectly extracted prices
+            //assertIsExpectedPrice("8.5", "25-09", null, null, null);
+
+            //// Misc
+            //assertIsExpectedPrice("of", "16.00 ft", null, null, null);
+            //assertIsExpectedPrice("Free Shipping on Orders $49+.", "Free Shipping on Orders $49+.", "$", null, null);
+        //}
+
+        [Test]
+        public void TestPriceExtraction_DecimalSeparatorExamples()
+        {
+            assertIsExpectedPrice(null, "1250€ 600", "€", "1250", 1250);
+            assertIsExpectedPrice(null, "1250€ 60", "€", "1250€60", 1250.60);
+            assertIsExpectedPrice(null, "1250€600", "€", "1250€600", 1250.600);
+            assertIsExpectedPrice(null, ".75 €", "€", ".75", 0.75, EDecimalSeparatorStyle.American);
+            assertIsExpectedPrice("$.75", "$.75", "$", ".75", 0.75, EDecimalSeparatorStyle.American);
+            assertIsExpectedPrice("$..75", "$..75", "$", ".75", 0.75, EDecimalSeparatorStyle.American);
+
+            // TO DO check if expected amounts for the following cases actually make sense
+            //assertIsExpectedPrice("$..75,333", "$..75,333", "$", ".75,333", 0.75333, EDecimalSeparatorStyle.American);
+            //assertIsExpectedPrice("$..75,333", "$..75,333", "$", ".75,333", 75.333, EDecimalSeparatorStyle.European);
+            //assertIsExpectedPrice("$.750.30", "$.750.30", "$", "750.30", 750.30, EDecimalSeparatorStyle.American);
         }
     }
 }
