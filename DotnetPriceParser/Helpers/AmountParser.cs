@@ -15,7 +15,7 @@ namespace DotnetPriceParser
 
         private static string extractAmountText(string input)
         {
-            string pattern = @"([\d.,]+)";
+            string pattern = @"(?:\.|\,)*(\d+(?:(?:\.|\,)*\d*)*)";
 
             return RegexHelper.GetFirstMatch(pattern, input);
         }
@@ -112,6 +112,32 @@ namespace DotnetPriceParser
             return input;
         }
 
+        public static string removeEuroSymbolAsDecimalSeparator(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return null;
+            }
+
+            if (!input.Contains("€"))
+            {
+                return input;
+            }
+
+            string decimalSepReplacement = string.Empty;
+
+            if (input.Contains("."))
+            {
+                decimalSepReplacement = ",";
+            }
+            else
+            {
+                decimalSepReplacement = ".";
+            }
+
+            return Regex.Replace(input, @"(?<=\d+)€+\s*(?=\d+)", decimalSepReplacement).Trim();
+        }
+
         private static EDecimalSeparatorStyle GetPredictedDecimalSeparatorStyle(string input)
         {
             EDecimalSeparatorStyle decSepByCounting = GetPredictedDecimalSeparatorStyleByCounting(input);
@@ -149,7 +175,10 @@ namespace DotnetPriceParser
             rawPrice = joinDetachedDigits(rawPrice);
             rawPrice = joinDetachedDigitsAndDecimalSeparators(rawPrice);
             rawPrice = discardPercentageAmounts(rawPrice);
+            rawPrice = removeEuroSymbolAsDecimalSeparator(rawPrice);
+
             rawPrice = extractAmountText(rawPrice);
+
             rawPrice = removeRedundantDecimalSeparators(rawPrice);
             rawPrice = removeWrongDecimalSeparatorsAtBeginning(rawPrice);
             rawPrice = preppendLeadingZero(rawPrice);
