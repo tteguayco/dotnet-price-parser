@@ -2,6 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Teguayco Gutiérrez González</Authors>
+    <Company>Teguayco Gutiérrez González</Company>
+    <Product>dotnet-price-parser</Product>
+    <Description>Open source library for parsing prices from raw strings.</Description>
+    <PackageProjectUrl>https://github.com/tteguayco/dotnet-price-parser</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tteguayco/dotnet-price-parser</RepositoryUrl>
+    <Copyright>2021</Copyright>
+    <PackageLicenseExpression>GPL-3.0</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>dotnet-price-parser</PackageId>
+    <PackageTags>web, scraping, crawling, price, prices, currency, currencies</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
