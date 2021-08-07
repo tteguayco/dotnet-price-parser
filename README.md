@@ -77,12 +77,12 @@ Price price = Price.FromString("40% OFF")
 An alternate source string can be specified to try to extract the currency, if the latter could not be found in the provided raw price:
 
 ```cs
-Price price = Price.FromString("8.29", currencyHint: "£ 8.29");
+Price price = Price.FromString("8.29", rawCurrencyHint: "£ 8.29");
 // price.Amount = 8.29; price.Currency = "£"
 ```
 
 ```cs
-Price price = Price.FromString("8.29 EUR", currencyHint: "£ 8.29");
+Price price = Price.FromString("8.29 EUR", rawCurrencyHint: "£ 8.29");
 // price.Amount = 8.29; price.Currency = "EUR"
 ```
 
