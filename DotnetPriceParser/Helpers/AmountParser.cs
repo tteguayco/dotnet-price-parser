@@ -112,7 +112,7 @@ namespace DotnetPriceParser
             return input;
         }
 
-        public static string removeEuroSymbolAsDecimalSeparator(string input)
+        private static string removeEuroSymbolAsDecimalSeparator(string input)
         {
             if (string.IsNullOrEmpty(input))
             {
