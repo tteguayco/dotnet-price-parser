@@ -105,6 +105,8 @@ Price price = Price.FromString("Price: $140.600")
 // price.Amount = 140600; price.Currency = "USD"
 ```
 
+**Note.** The library assumes American and European styles use dots and commas as decimal separators, respectively.
+
 ## Running the tests
 
 The library is tested with +900 [NUnit](https://nunit.org/) tests, which can be easily run from Visual Studio.
