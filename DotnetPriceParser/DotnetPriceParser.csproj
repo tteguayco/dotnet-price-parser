@@ -9,7 +9,7 @@
     <PackageProjectUrl>https://github.com/tteguayco/dotnet-price-parser</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tteguayco/dotnet-price-parser</RepositoryUrl>
     <Copyright>2021</Copyright>
-    <PackageLicenseExpression>GPL-3.0</PackageLicenseExpression>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>dotnet-price-parser</PackageId>
