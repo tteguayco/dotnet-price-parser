@@ -112,6 +112,6 @@ Price price = Price.FromString("Price: $140.600")
 The library is tested with +900 [NUnit](https://nunit.org/) tests, which can be easily run from Visual Studio.
 
 ## Donation
-If this project helps you reduce developing time, you may consider giving me a cup of coffee :-)
+If this project helps you reduce development time, you may consider giving me a cup of coffee :-)
 
 [![Donate](https://www.oldpathschapel.com/wp-content/uploads/2020/03/paypal-donate-button-300x116.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5ENPSGHWL3AQ8&source=url)
