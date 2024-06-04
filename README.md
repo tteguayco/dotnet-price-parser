@@ -114,4 +114,6 @@ The library is tested with +900 [NUnit](https://nunit.org/) tests, which can be 
 ## Donation
 If this project helps you reduce development time, you may consider giving me a cup of coffee :-)
 
-[![Donate](https://www.oldpathschapel.com/wp-content/uploads/2020/03/paypal-donate-button-300x116.png)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5ENPSGHWL3AQ8&source=url)
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5ENPSGHWL3AQ8&source=url">
+    <img src="https://github.com/tteguayco/dotnet-price-parser/assets/20015750/80a553dc-680f-43b6-9642-ebfed01ebe4d" alt="Donate" width="200" height="80">
+</a>
